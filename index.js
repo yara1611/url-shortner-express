@@ -83,7 +83,7 @@ app.post("/api/shorturl",function(req,res){
   originalUrl=originalUrl.replace(/^https?:?\/\//, "");
   console.log('param: '+originalUrl)
   dns.lookup(originalUrl, function(err,valid){
-    if(err) console.error(err)
+    if(err) return res.json({ error: 'invalid url' }); 
     if(valid){
       Url.find({original:originalUrl}).exec(function(err,url){
     if(err) console.error(err)
