@@ -4,6 +4,7 @@ const cors = require('cors');
 const dns = require('dns');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+
 mongoose.connect('mongodb+srv://yara01:CHmc7pWgoaYOhpPx@cluster0.hgsirvn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { useNewUrlParser: true, useUnifiedTopology: true });
 
 const app = express();
@@ -42,9 +43,6 @@ function genUrl(url) {
   let min = 1;
   let max = 100;
   let num = Math.floor(Math.random() * (max - min + 1)) + min;
-  if (url === 'freeCodeCamp.org') {
-    num = 1;
-  }
   return num;
 }
 
