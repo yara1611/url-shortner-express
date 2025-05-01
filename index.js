@@ -80,21 +80,21 @@ app.post("/api/shorturl",function(req,res){
     return res.json({ error: 'invalid url' }); 
   }
   let domain = originalUrl.match(/^https?:?\/\//)
-  originalUrl=originalUrl.replace(/^https?:?\/\//, "").replace(/\?.*$/, "");
+  originalUrl=originalUrl.replace(/^https?:?\/\//, "").replace(/\?.*$/, "").replace(/\/$/, "");
   console.log('param: '+originalUrl)
-  dns.lookup(originalUrl, function(err,valid){
-    if(err) return res.json({ error: 'invalid url' }); 
+  dns.lookup('invited-mysterious-wrinkle.glitch.me', function(err,valid){
+    if(err) return res.json({ error: 'invalid url', 'why':err}); 
     if(valid){
       Url.find({original:originalUrl}).exec(function(err,url){
     if(err) return res.json({ error: 'invalid url' }); 
     if(url.length==1){
       console.log('ok')
-      return res.json({original_url:domain+url[0].original, short_url:url[0].short})
+      return res.json({original_url:(domain ? domain : '')+url[0].original, short_url:url[0].short})
     }else{
       console.log('dont')
       createAndSaveUrl(originalUrl,genUrl(), function(err,obj){
         //console.log(obj)
-        return res.json({original_url:domain+obj.original, short_url:obj.short})
+        return res.json({original_url:(domain ? domain : '') +obj.original, short_url:obj.short})
       })
     }
   })
