@@ -61,6 +61,7 @@ function genUrl(url){
 
 
 app.post("/api/shorturl",function(req,res){
+  
   let longUrl = req.body.url
   
   if (longUrl === null || longUrl === '') { 
@@ -72,9 +73,10 @@ app.post("/api/shorturl",function(req,res){
   let originalUrl=longUrl.replace(/^https?:?\/\//, "").replace(/\?.*$/, "").replace(/\/$/, "");
   
   console.log('param: '+originalUrl
-             +' input: '+longUrl)
+             +' input: '+longUrl
+             +' domain: '+domain)
   
-  dns.lookup('invited-mysterious-wrinkle.glitch.me', function(err,valid){
+  dns.lookup(originalUrl, function(err,valid){
     if(err) {
       console.log('error dns callback')
       return res.json({ error: 'invalid url'});
