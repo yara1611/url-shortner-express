@@ -86,7 +86,7 @@ app.post("/api/shorturl",function(req,res){
     if(err) return res.json({ error: 'invalid url' }); 
     if(valid){
       Url.find({original:originalUrl}).exec(function(err,url){
-    if(err) console.error(err)
+    if(err) return res.json({ error: 'invalid url' }); 
     if(url.length==1){
       console.log('ok')
       return res.json({original_url:domain+url[0].original, short_url:url[0].short})
