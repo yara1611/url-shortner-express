@@ -70,30 +70,31 @@ app.post("/api/shorturl",function(req,res){
   
   let domain = longUrl.match(/^https?:?\/\//)
   
-  let originalUrl=longUrl.replace(/^https?:?\/\//, "").replace(/\?.*$/, "").replace(/\/$/, "");
+  let noHttpUrl=longUrl.replace(/^https?:?\/\//, "")
+  let clean = noHttpUrl.replace(/\?.*$/, "").replace(/\/$/, "");
   
-  console.log('param: '+originalUrl
+  console.log('param: '+clean
              +' input: '+longUrl
              +' domain: '+domain)
   
-  dns.lookup(originalUrl, function(err,valid){
+  dns.lookup(clean, function(err,valid){
     if(err) {
       console.log('error dns callback')
       return res.json({ error: 'invalid url'});
     }
     if(valid){
-      Url.find({original:originalUrl}).exec(function(err,url){
+      Url.find({original:longUrl}).exec(function(err,url){
     if(err){
       console.log('error url find')
       return res.json({ error: 'invalid url'}); 
     }
     if(url.length==1){
       console.log('exists')
-      return res.json({original_url:(domain ? domain : '')+url[0].original, short_url:url[0].short})
+      return res.json({original_url:url[0].original, short_url:url[0].short})
     }else{
       console.log('Creating a new shorturl')
-      createAndSaveUrl(originalUrl,genUrl(), function(err,obj){
-        return res.json({original_url:(domain ? domain : '') +obj.original, short_url:obj.short})
+      createAndSaveUrl(longUrl,genUrl(), function(err,obj){
+        return res.json({original_url:obj.original, short_url:obj.short})
       })
     }
   })
