@@ -4,25 +4,25 @@ const cors = require('cors');
 const dns = require('dns');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-mongoose.connect('mongodb+srv://yara01:CHmc7pWgoaYOhpPx@cluster0.hgsirvn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-                { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect('mongodb+srv://yara01:CHmc7pWgoaYOhpPx@cluster0.hgsirvn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { useNewUrlParser: true, useUnifiedTopology: true });
 
-// Basic Configuration
-const port = process.env.PORT || 3000;
 const app = express();
-app.use(cors());
-app.use('/public', express.static(`${process.cwd()}/public`));
-app.use(bodyParser.urlencoded({ extended: true }));
+const port = process.env.PORT || 3000;
 
-// Database and schema setup
+app.use(cors());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use('/public', express.static(`${process.cwd()}/public`));
+
+// Database Schema
 const urlSchema = new mongoose.Schema({
   original: String,
   short: Number
 });
 
-var Url = mongoose.model('Url', urlSchema);
+const Url = mongoose.model('Url', urlSchema);
 
-var createAndSaveUrl = function(original, short, done) {
+// Helper Functions
+const createAndSaveUrl = function(original, short, done) {
   let genUrl = new Url({ original: original, short: short });
   genUrl.save(function(err, data) {
     if (err) return console.error(err);
@@ -30,14 +30,14 @@ var createAndSaveUrl = function(original, short, done) {
   });
 };
 
-var findByOriginal = function(original, done) {
+const findByOriginal = function(original, done) {
   Url.find({ original: original }, function(err, personFound) {
     if (err) return console.log(err);
     done(null, personFound);
   });
 };
 
-// Generate unique short URL
+// Generate a random short URL
 function genUrl(url) {
   let min = 1;
   let max = 100;
@@ -48,59 +48,39 @@ function genUrl(url) {
   return num;
 }
 
-// Check if URL exists in the database
-function check(url, cb) {
-  findByOriginal(url, function(err, data) {
-    if (err) {
-      console.error(err);
-      return cb(null); // or handle error differently
-    }
-
-    if (data && data.length === 1) {
-      cb(data); // URL exists
-    } else {
-      cb(null); // URL does not exist
-    }
-  });
-}
-
+// POST /api/shorturl to shorten the URL
 app.post("/api/shorturl", function(req, res) {
   let originalUrl = req.body.url;
-  if (originalUrl === null || originalUrl === '') { 
-    return res.json({ error: 'invalid url' }); 
-  }
 
-  // Ensure the URL has http:// or https://
-  let domain = originalUrl.match(/^https?:\/\//);
-  if (!domain) {
-    originalUrl = 'http://' + originalUrl; // Add http:// if missing
+  // Validate URL format
+  if (!/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/.test(originalUrl)) {
+    return res.json({ error: 'invalid url' });
   }
 
   // Remove protocol from URL for DNS lookup and save
   originalUrl = originalUrl.replace(/^https?:\/\//, "");
 
-  console.log('param: ' + originalUrl);
-
-  // DNS lookup to check if the domain is valid
+  // DNS lookup to check if the domain exists
   dns.lookup(originalUrl, function(err, valid) {
     if (err) {
       console.error(err);
       return res.json({ error: 'invalid url' });
     }
-    
-    // If valid, proceed to check the database
+
+    // Check if the URL is already in the database
     Url.find({ original: originalUrl }).exec(function(err, url) {
       if (err) {
         console.error(err);
         return res.json({ error: 'internal server error' });
       }
 
+      // If URL exists, return the short URL
       if (url.length === 1) {
-        console.log('URL exists');
         return res.json({ original_url: 'https://' + url[0].original, short_url: url[0].short });
       } else {
-        console.log('URL not found, creating a new short URL');
-        createAndSaveUrl(originalUrl, genUrl(originalUrl), function(err, obj) {
+        // If URL doesn't exist, create a new entry
+        let shortUrl = genUrl(originalUrl);
+        createAndSaveUrl(originalUrl, shortUrl, function(err, obj) {
           if (err) {
             console.error(err);
             return res.json({ error: 'internal server error' });
@@ -112,7 +92,7 @@ app.post("/api/shorturl", function(req, res) {
   });
 });
 
-// Redirect route for short URLs
+// Redirect to original URL by short URL
 app.get("/api/shorturl/:id", function(req, res) {
   let shortUrl = req.params.id;
 
@@ -123,7 +103,7 @@ app.get("/api/shorturl/:id", function(req, res) {
       return res.json({ error: 'internal server error' });
     }
     if (url.length === 1) {
-      console.log('Redirecting to: https://' + url[0].original);
+      // Redirect to the original URL
       res.redirect('https://' + url[0].original);
     } else {
       return res.json({ error: 'No short URL found for given ID' });
@@ -131,6 +111,7 @@ app.get("/api/shorturl/:id", function(req, res) {
   });
 });
 
+// Start the server
 app.listen(port, function() {
   console.log(`Listening on port ${port}`);
 });
