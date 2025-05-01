@@ -31,13 +31,6 @@ const createAndSaveUrl = function(original, short, done) {
   });
 };
 
-const findByOriginal = function(original, done) {
-  Url.find({ original: original }, function(err, personFound) {
-    if (err) return console.log(err);
-    done(null, personFound);
-  });
-};
-
 // Generate a random short URL
 function genUrl(url) {
   let min = 1;
@@ -50,7 +43,7 @@ function genUrl(url) {
 app.post("/api/shorturl", function(req, res) {
   let originalUrl = req.body.url;
 
-  // Validate URL format
+  // Validate URL format (ensure it's a valid HTTP/HTTPS URL)
   if (!/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/.test(originalUrl)) {
     return res.json({ error: 'invalid url' });
   }
@@ -58,35 +51,31 @@ app.post("/api/shorturl", function(req, res) {
   // Remove protocol from URL for DNS lookup and save
   originalUrl = originalUrl.replace(/^https?:\/\//, "");
 
-  // DNS lookup to check if the domain exists
-  dns.lookup(originalUrl, function(err, valid) {
+  // Check if the URL is already in the database
+  Url.find({ original: originalUrl }).exec(function(err, url) {
     if (err) {
       console.error(err);
-      return res.json({ error: 'invalid url' });
+      return res.json({ error: 'internal server error' });
     }
 
-    // Check if the URL is already in the database
-    Url.find({ original: originalUrl }).exec(function(err, url) {
-      if (err) {
-        console.error(err);
-        return res.json({ error: 'internal server error' });
+    // If URL exists, return the short URL
+    if (url.length === 1) {
+      return res.json({ original_url: 'https://' + url[0].original, short_url: url[0].short });
+    } else {
+      // If URL doesn't exist, create a new entry with a unique short URL
+      let shortUrl = genUrl(originalUrl);
+      // Ensure short URL is unique
+      while (Url.exists({ short: shortUrl })) {
+        shortUrl = genUrl(originalUrl);  // Regenerate until unique
       }
-
-      // If URL exists, return the short URL
-      if (url.length === 1) {
-        return res.json({ original_url: 'https://' + url[0].original, short_url: url[0].short });
-      } else {
-        // If URL doesn't exist, create a new entry
-        let shortUrl = genUrl(originalUrl);
-        createAndSaveUrl(originalUrl, shortUrl, function(err, obj) {
-          if (err) {
-            console.error(err);
-            return res.json({ error: 'internal server error' });
-          }
-          return res.json({ original_url: 'https://' + obj.original, short_url: obj.short });
-        });
-      }
-    });
+      createAndSaveUrl(originalUrl, shortUrl, function(err, obj) {
+        if (err) {
+          console.error(err);
+          return res.json({ error: 'internal server error' });
+        }
+        return res.json({ original_url: 'https://' + obj.original, short_url: obj.short });
+      });
+    }
   });
 });
 
