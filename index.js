@@ -74,8 +74,8 @@ app.post("/api/shorturl",function(req,res){
   if (originalUrl === null || originalUrl === '') { 
     return res.json({ error: 'invalid url' }); 
   }
-
-   originalUrl=originalUrl.replace(/^https?:?\/\//, "");
+  let domain = originalUrl.match(/^https?:?\/\//)
+  originalUrl=originalUrl.replace(/^https?:?\/\//, "");
   console.log('param: '+originalUrl)
   dns.lookup(originalUrl, function(err,valid){
     if(err) console.error(err)
@@ -84,12 +84,12 @@ app.post("/api/shorturl",function(req,res){
     if(err) console.error(err)
     if(url.length==1){
       console.log('ok')
-      return res.json({original_url:url[0].original, short_url:url[0].short})
+      return res.json({original_url:domain+url[0].original, short_url:url[0].short})
     }else{
       console.log('dont')
       createAndSaveUrl(originalUrl,genUrl(), function(err,obj){
         //console.log(obj)
-        return res.json({original_url:'https://'+obj.original, short_url:obj.short})
+        return res.json({original_url:domain+obj.original, short_url:obj.short})
       })
     }
   })
