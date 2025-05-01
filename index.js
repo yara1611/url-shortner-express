@@ -106,7 +106,7 @@ app.get("/api/shorturl/:id",function(req,res){
   let url = req.params.id;
   Url.find({short:url}).exec(function(err,url){
     if(err) console.error(err)
-    if(url) res.redirect('https://'+url[0].original+'/')
+    if(url) res.redirect(url[0].original)
   })
 })
 app.listen(port, function() {
