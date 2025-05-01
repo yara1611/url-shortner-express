@@ -33,6 +33,7 @@ const urlSchema = new mongoose.Schema({
 })
 
 var Url = mongoose.model('Url',urlSchema)
+
 var createAndSaveUrl =function(original,short,done){
   let genUrl = new Url({original:original, short:short})
   genUrl.save(function(err, data) {
@@ -40,6 +41,7 @@ var createAndSaveUrl =function(original,short,done){
     done(null, data)
   });
 }
+
 var findByOriginal = function(original, done){
   Url.find({original: original}, function (err, personFound) {
     if (err) return console.log(err);
@@ -54,52 +56,45 @@ function genUrl(url){
   if(url=='freeCodeCamp.org'){
   num = 1
   }
-  
-  
   return num;
 }
 
-function check(url, cb){
-  findByOriginal(url, function(err, data) {
-    if (err) {
-      console.error(err);
-      return cb(null); // or handle error differently
-    }
-
-    if (data && data.length == 1) {
-      cb(data); // URL exists
-    } else {
-      cb(null); // URL does not exist
-    }
-  });
-}
 
 app.post("/api/shorturl",function(req,res){
-  let originalUrl = req.body.url
-  if (originalUrl === null || originalUrl === '') { 
+  let longUrl = req.body.url
+  
+  if (longUrl === null || longUrl === '') { 
     return res.json({ error: 'invalid url' }); 
   }
-  let domain = originalUrl.match(/^https?:?\/\//)
-  originalUrl=originalUrl.replace(/^https?:?\/\//, "").replace(/\?.*$/, "").replace(/\/$/, "");
-  console.log('param: '+originalUrl)
+  
+  let domain = longUrl.match(/^https?:?\/\//)
+  
+  let originalUrl=longUrl.replace(/^https?:?\/\//, "").replace(/\?.*$/, "").replace(/\/$/, "");
+  
+  console.log('param: '+originalUrl
+             +' input: '+longUrl)
+  
   dns.lookup('invited-mysterious-wrinkle.glitch.me', function(err,valid){
-    if(err) return res.json({ error: 'invalid url'}); 
+    if(err) {
+      console.log('error dns callback')
+      return res.json({ error: 'invalid url'});
+    }
     if(valid){
       Url.find({original:originalUrl}).exec(function(err,url){
-    if(err) return res.json({ error: 'invalid url' }); 
+    if(err){
+      console.log('error url find')
+      return res.json({ error: 'invalid url'}); 
+    }
     if(url.length==1){
-      console.log('ok')
+      console.log('exists')
       return res.json({original_url:(domain ? domain : '')+url[0].original, short_url:url[0].short})
     }else{
-      console.log('dont')
+      console.log('Creating a new shorturl')
       createAndSaveUrl(originalUrl,genUrl(), function(err,obj){
-        //console.log(obj)
         return res.json({original_url:(domain ? domain : '') +obj.original, short_url:obj.short})
       })
     }
   })
-    }else{
-      return res.json({error:'invalid url'})
     }
   })
 })
