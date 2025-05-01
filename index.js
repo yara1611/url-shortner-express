@@ -71,7 +71,8 @@ function check(url, cb){
 
 app.post("/api/shorturl",function(req,res){
   let originalUrl = req.body.url
-
+  originalUrl =originalUrl.match(/^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/igm);
+  originalUrl=originalUrl[0].replace(/^https?:\/\//i, "");
   dns.lookup(originalUrl, function(err,valid){
     if(err) console.error(err)
     if(valid){
