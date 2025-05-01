@@ -83,7 +83,7 @@ app.post("/api/shorturl",function(req,res){
   originalUrl=originalUrl.replace(/^https?:?\/\//, "").replace(/\?.*$/, "").replace(/\/$/, "");
   console.log('param: '+originalUrl)
   dns.lookup('invited-mysterious-wrinkle.glitch.me', function(err,valid){
-    if(err) return res.json({ error: 'invalid url', 'why':err}); 
+    if(err) return res.json({ error: 'invalid url'}); 
     if(valid){
       Url.find({original:originalUrl}).exec(function(err,url){
     if(err) return res.json({ error: 'invalid url' }); 
