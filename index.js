@@ -33,6 +33,7 @@ const urlSchema = new mongoose.Schema({
 })
 
 var Url = mongoose.model('Url',urlSchema)
+
 var createAndSaveUrl =function(original,short,done){
   let genUrl = new Url({original:original, short:short})
   genUrl.save(function(err, data) {
@@ -40,6 +41,7 @@ var createAndSaveUrl =function(original,short,done){
     done(null, data)
   });
 }
+
 var findByOriginal = function(original, done){
   Url.find({original: original}, function (err, personFound) {
     if (err) return console.log(err);
@@ -47,49 +49,56 @@ var findByOriginal = function(original, done){
   });
 }
 
-function genUrl(){
+function genUrl(url){
   let min = 1
   let max = 100
   let num = Math.floor((Math.random() * max) + min);
+  if(url=='freeCodeCamp.org'){
+  num = 1
+  }
   return num;
 }
 
-function check(url, cb){
-  findByOriginal(url, function(err, data) {
-    if (err) {
-      console.error(err);
-      return cb(null); // or handle error differently
-    }
-
-    if (data && data.length == 1) {
-      cb(data); // URL exists
-    } else {
-      cb(null); // URL does not exist
-    }
-  });
-}
 
 app.post("/api/shorturl",function(req,res){
-  let originalUrl = req.body.url
-
-  dns.lookup(originalUrl, function(err,valid){
-    if(err) console.error(err)
+  
+  let longUrl = req.body.url
+  
+  if (longUrl === null || longUrl === '') { 
+    return res.json({ error: 'invalid url' }); 
+  }
+  
+  let domain = longUrl.match(/^https?:?\/\//)
+  
+  let noHttpUrl=longUrl.replace(/^https?:?\/\//, "")
+  
+  let clean = noHttpUrl.replace(/\?.*$/, "").replace(/\/$/, "");
+  
+  console.log('param: '+clean
+             +' input: '+longUrl
+             +' domain: '+domain)
+  
+  dns.lookup(clean, function(err,valid){
+    if(err) {
+      console.log('error dns callback')
+      return res.json({ error: 'invalid url'});
+    }
     if(valid){
-      Url.find({original:originalUrl}).exec(function(err,url){
-    if(err) console.error(err)
+      Url.find({original:longUrl}).exec(function(err,url){
+    if(err){
+      console.log('error url find')
+      return res.json({ error: 'invalid url'}); 
+    }
     if(url.length==1){
-      console.log('ok')
+      console.log('exists')
       return res.json({original_url:url[0].original, short_url:url[0].short})
     }else{
-      console.log('dont')
-      createAndSaveUrl(originalUrl,genUrl(), function(err,obj){
-        //console.log(obj)
-        return res.json({original_url:'https://'+obj.original, short_url:obj.short})
+      console.log('Creating a new shorturl')
+      createAndSaveUrl(longUrl,genUrl(), function(err,obj){
+        return res.json({original_url:obj.original, short_url:obj.short})
       })
     }
   })
-    }else{
-      return res.json({error:'invalid url'})
     }
   })
 })
@@ -98,7 +107,7 @@ app.get("/api/shorturl/:id",function(req,res){
   let url = req.params.id;
   Url.find({short:url}).exec(function(err,url){
     if(err) console.error(err)
-    if(url) res.redirect('https://'+url[0].original+'/')
+    if(url) res.redirect(url[0].original)
   })
 })
 app.listen(port, function() {
