@@ -80,7 +80,7 @@ app.post("/api/shorturl",function(req,res){
     return res.json({ error: 'invalid url' }); 
   }
   let domain = originalUrl.match(/^https?:?\/\//)
-  originalUrl=originalUrl.replace(/^https?:?\/\//, "");
+  originalUrl=originalUrl.replace(/^https?:?\/\//, "").replace(/\?.*$/, "");
   console.log('param: '+originalUrl)
   dns.lookup(originalUrl, function(err,valid){
     if(err) return res.json({ error: 'invalid url' }); 
