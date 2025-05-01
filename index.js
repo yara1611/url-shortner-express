@@ -71,6 +71,7 @@ app.post("/api/shorturl",function(req,res){
   let domain = longUrl.match(/^https?:?\/\//)
   
   let noHttpUrl=longUrl.replace(/^https?:?\/\//, "")
+  
   let clean = noHttpUrl.replace(/\?.*$/, "").replace(/\/$/, "");
   
   console.log('param: '+clean
